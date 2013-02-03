@@ -13,7 +13,7 @@ def version():
 def webroot():
     return "Hi caller, please refer to readme for enlightenPi web API."
 
-@app.route('/seted')
+@app.route('/setled')
 def Setled():
     # show the user profile for that user
     #return 'User %s' % username
