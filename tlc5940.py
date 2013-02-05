@@ -77,7 +77,7 @@ class TLC5940 (object):
     value = int(self.clamp(value, 0, 63))
     self.writeDC([value for i in range(self.numberof_leds)])
       
-  def writeDC(self, input = []):
+  def writeDC(self, input = []):  
     """
     Writes a given DC register to the TLC5940 IC.
     Not multi-chip capable yet!!
@@ -85,7 +85,7 @@ class TLC5940 (object):
     register = list(input)  #make local copy
     register.reverse()      #Reversal is somehow needed..
     DCdata_packed = []
-    for i in range(0,16,4): DCdata_packed += self._4to3(register[i:i+4])
+    for i in range(0,16,4): DCdata_packed += self.pack_4to3(register[i:i+4])
 
     self.gpio.digitalWrite(self.vprgpin, self.gpio.HIGH)
     self.spi.writebytes(DCdata_packed)
@@ -144,14 +144,24 @@ class TLC5940 (object):
   def clamp(self, input, minOut, maxOut):
     return max(minOut, min(input, maxOut))
     
-  def _4to3(self, inp):
+  def pack_4to3(self, inp):
     """
     converts 4 6bit integers to 3 8bit integers
     output bytes: 00000011 11112222 22333333
     """
     if len(inp) != 4:
-      logging.error("Input to _4to3 kaputt.")
+      logging.error("Input to pack_4to3 kaputt.")
       return False
-      
     inp = [value & 63 for value in inp] 
     return [(inp[0] << 2) & 255 | inp[1] >> 4, (inp[1] << 4) & 255 | inp[2] >> 2, (inp[2] << 6) & 255 | inp[3]]
+
+  def pack_2to3(self, inp):
+    """
+    converts 2 12bit integers to 3 8bit integers
+    output bytes: 00000000 00001111 11111111
+    """
+    if len(inp) != 2:
+      logging.error("Input to pack_2to3 ist kaputt.")
+      return False
+    inp = [value & 4095 for value in inp] 
+    return [inp[0] >> 4, (inp[0] << 4) & 255 | inp[1] >> 8, inp[1] & 255]
