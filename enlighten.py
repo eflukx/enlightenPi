@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import tlc5940, signal, sys, pygame, logging
+import sequences, tlc5940, signal, sys, pygame, logging
 from flask import Flask, request
 #from sequences import *
 
@@ -9,6 +9,47 @@ app = Flask(__name__)
 def welcome():
   return "Howdy partner... <a href=https://github.com/eflukx/enlightenPi>EnlightenPi</a> seems to be runnin'<br>For more information please refer to the readme."
 
+@app.route('/sequence')
+def sequence():
+  if request.args.get('duration') == None:
+    duration = 0.01
+  else:
+    duration = float(request.args.get('duration'))
+    
+  if request.args.get('offset') == None:
+    return "argument 'offset' needed."
+  else:
+    offset = int(request.args.get('offset')) * 3
+
+  if request.args.get('name') == None:
+    return "argument 'name' needs to be present"
+  else:
+    _seqname = str(request.args.get('name'))
+  while(1):  
+    _seq = sequences.getsequence(_seqname,offset, len(TLC.DCLevels), scale = 1)
+    TLC.fadeto(_seq, duration = duration)
+    offset += 3
+  return "step..."
+
+
+@app.route('/slideto')
+def slideto():
+  if request.args.get('duration') == None:
+    duration = 0.5
+  else:
+    duration = float(request.args.get('duration'))
+
+  if request.args.get('color') == None:
+    return "argument 'color' needs to be present"
+  else:
+    colours = [pygame.Color(str(value)) for value in request.args.get('color').split(',')]
+  
+  if request.args.get('led') == None:
+    leds = range(TLC.numberof_RGBleds)
+  else:
+    leds = [int(value) for value in request.args.get('led').split(',')]
+  return "tralaa ik ben nog niet af.."  
+    
 @app.route('/fadeto')
 def fadeto():
   if request.args.get('duration') == None:
@@ -32,18 +73,15 @@ def fadeto():
   
   newRGBlevels = []
   for value in colours:
-    newRGBlevels += [value.r, value.g, value.b]  #new RGB levels list of tuples.
+    newRGBlevels += [value.r, value.g, value.b]                           #RGB given in webinterface parsed to a list 
   
-  RGBlevels = [TLC.DCLevels[x] << 2 for x in range(len(TLC.DCLevels))]             #Get existing old levels (new values will overwrite)
+  RGBlevels = [TLC.DCLevels[x] << 2 for x in range(len(TLC.DCLevels))]    #Get existing old levels (new values will overwrite)
   
   logging.info(", ".join(["Fading LED %i to %s" % (zpper[0], zpper[1]) for zpper in zip(leds,colours)]))
   for i in range(len(leds)):
-    offset = leds[i] * 3 #current led offset
-    RGBlevels[offset:offset + 3] = newRGBlevels[i*3:i*3 + 3]
-    
-  print RGBlevels
-  print len(RGBlevels)
-    
+    offset = leds[i] * 3
+    RGBlevels[offset:offset + 3] = newRGBlevels[i*3:i*3 + 3]              #overweite the old values with new
+
   TLC.fadeto(RGBlevels, duration = duration)
   return "<br>".join(["Faded LED %i to %s in %s seconds" % (zpper[0], zpper[1], duration) for zpper in zip(leds,colours)])
 
@@ -113,4 +151,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)    
     signal.signal(signal.SIGINT, signal_handler)
     TLC = tlc5940.TLC5940()
-    app.run(host='0.0.0.0', debug=False)
+    app.run(host='0.0.0.0', debug=True)
