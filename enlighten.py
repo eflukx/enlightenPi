@@ -28,7 +28,7 @@ def fadeto():
   
   if len(leds) > len(colours):
     for i in range(len(leds)-len(colours)): colours.append(colours[-1])
-    logging.info("Number of leds given exceeds colours given.")
+    logging.info("Number of leds given exceeds colours given. Extending with last colour")
   
   newRGBlevels = []
   for value in colours:
@@ -76,17 +76,23 @@ def unblank():
   
 @app.route('/setled')
 def setled():
-  """
-  set one or multiple RGB leds at once. If less colours then leds are given, the last
+  """set one or multiple RGB leds at once. If less colours then leds are given, the last
   colour is repeated; if more colours are given, in put is ignored. Input example:
   http://localhost:5000/setm?color=red,GREEN,0x0000ff,0xffffff&led=0,1,3,2
   """
-  leds = [int(value) for value in request.args.get('led').split(',')]
-  colours = [pygame.Color(str(value)) for value in request.args.get('color').split(',')]
+  if request.args.get('color') == None:
+    return "argument 'color' needs to be present"
+  else:
+    colours = [pygame.Color(str(value)) for value in request.args.get('color').split(',')]
   
+  if request.args.get('led') == None:
+    leds = range(TLC.numberof_RGBleds)
+  else:
+    leds = [int(value) for value in request.args.get('led').split(',')]
+
   if len(leds) > len(colours):
     for i in range(len(leds)-len(colours)): colours.append(colours[-1])
-    logging.info("Number of leds given exceeds colours given.")
+    logging.info("Number of leds given exceeds colours given. Extending with last colour")
     
   coloursRGB = [(value.r, value.g, value.b) for value in colours]
 
@@ -107,4 +113,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)    
     signal.signal(signal.SIGINT, signal_handler)
     TLC = tlc5940.TLC5940()
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=False)
